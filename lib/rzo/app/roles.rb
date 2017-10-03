@@ -22,7 +22,6 @@ module Rzo
 
       def run
         exit_status = 0
-        load_config!
         write_file(opts[:output]) { |fd| fd.puts(roles) }
         exit_status
       end

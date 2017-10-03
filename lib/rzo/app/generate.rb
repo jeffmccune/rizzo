@@ -15,7 +15,6 @@ module Rzo
       # The main run method for the subcommand.
       def run
         exit_status = 0
-        load_config!
         # Vagrantfile
         erbfile = File.expand_path('../templates/Vagrantfile.erb', __FILE__)
         content = vagrantfile_content(erbfile, config)

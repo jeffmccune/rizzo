@@ -4,10 +4,8 @@ module Rzo
     ##
     # Load all rizzo config files and print the config
     class Config < Subcommand
-      attr_reader :config
       def run
         exit_status = 0
-        load_config!
         write_file(opts[:output]) { |fd| fd.puts(JSON.pretty_generate(config)) }
         exit_status
       end

@@ -1,6 +1,8 @@
 require 'rzo'
 require 'rzo/logging'
 require 'rzo/option_parsing'
+require 'rzo/config_parsing'
+require 'rzo/app/config_validation'
 require 'rzo/app/config'
 require 'rzo/app/generate'
 require 'rzo/app/roles'
@@ -19,6 +21,9 @@ module Rzo
   class App
     include Rzo::Logging
     include Rzo::OptionParsing
+    include Rzo::ConfigParsing
+    include ConfigValidation
+    attr_reader :pwd
 
     ##
     # Exception used to exit the app from a subcommand.  Caught by the main run
@@ -40,11 +45,12 @@ module Rzo
     #   supply defaults not specified on the command line argument vector.
     #
     # @return [App] the application instance.
-    def initialize(argv = ARGV.dup, env = ENV.to_hash, stdout = $stdout, stderr = $stderr)
+    def initialize(argv = ARGV.dup, env = ENV.to_hash, stdout = $stdout, stderr = $stderr, pwd = Dir.pwd)
       @argv = argv
       @env = env
       @stdout = stdout
       @stderr = stderr
+      @pwd = pwd
       reset!
     end
 
@@ -53,19 +59,22 @@ module Rzo
     def reset!
       reset_options!
       reset_logging!(opts)
+      @config = nil
       @api = nil
     end
 
     ##
     # Accessor to Subcommand::Generate
-    def generate
-      @generate ||= Generate.new(opts, @stdout, @stderr)
+    def generate_subcommand
+      load_config!(opts[:config])
+      @generate_subcommand ||= Generate.new(opts, @stdout, @stderr, @config)
     end
 
     ##
     # Accessor to Subcommand::Config
-    def config
-      @config ||= Config.new(opts, @stdout, @stderr)
+    def config_subcommand
+      load_config!(opts[:config])
+      @config_subcommand ||= Config.new(opts, @stdout, @stderr, @config)
     end
 
     ##
@@ -85,11 +94,11 @@ module Rzo
     def run
       case opts[:subcommand]
       when 'config'
-        config.run
+        config_subcommand.run
       when 'generate'
-        generate.run
+        generate_subcommand.run
       when 'roles'
-        Roles.new(opts, @stdout, @stderr).run
+        Roles.new(opts, @stdout, @stderr, @config).run
       else
         educate
       end
